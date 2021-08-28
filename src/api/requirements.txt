@@ -1,0 +1,24 @@
+# Scheduler
+APScheduler == 3.7.0
+
+# Parsing HTML
+beautifulsoup4 == 4.9.3
+
+# Flask for the API server
+Flask == 1.1.2
+
+# Integration between Flask and unittest
+flask-unittest == 0.1.1
+
+# A very fast and expressive template engine.
+jinja2 == 2.11.2
+
+# pathvalidate is a Python library to sanitize/validate a string such as filenames/file-paths/etc.
+pathvalidate == 2.3.2
+
+# runs tests and generates coverage report
+pytest-cov == 2.11.1
+coverage == 5.5
+
+#Automation tool that's useful for scraping dynamic websites.
+selenium == 3.141.0

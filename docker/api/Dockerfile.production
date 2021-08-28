@@ -1,0 +1,23 @@
+FROM python:3.9.2
+
+# Install packages
+RUN apt-get update && apt-get -y install \
+	poppler-utils \
+	firefox-esr
+
+RUN wget -q "https://github.com/mozilla/geckodriver/releases/download/v0.29.0/geckodriver-v0.29.0-linux64.tar.gz" -O /tmp/geckodriver.tgz \
+	&& tar zxf /tmp/geckodriver.tgz -C /usr/bin/ \
+	&& rm /tmp/geckodriver.tgz
+
+RUN mkdir -p /var/www/cis4250-03.socs.uoguelph.ca
+WORKDIR /var/www/cis4250-03.socs.uoguelph.ca
+
+COPY src/api/ /var/www/cis4250-03.socs.uoguelph.ca
+
+RUN cd /var/www/cis4250-03.socs.uoguelph.ca
+
+RUN pip3 install -r requirements.txt
+
+ENV PATH="/usr/bin/geckodriver:${PATH}"
+
+ENTRYPOINT ["flask", "run", "--host=0.0.0.0"]

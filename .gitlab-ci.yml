@@ -1,0 +1,109 @@
+stages:
+    - test
+    - build
+    - build-prod-server
+    - deploy-prod-server
+
+API Tests:
+    stage: test
+    image: andrewdagostino/cis4250-ci:latest
+    cache:
+        key: $CI_JOB_STAGE-$CI_COMMIT_REF_SLUG
+        paths:
+            - ~/.cache/pip/
+    script:
+        - python -V
+        - pip install -r src/api/requirements.txt
+        - >2
+          pytest
+          --cov=src/api/classes/
+          --cov=src/api/functions/
+          --cov=src/api/apipkg/
+          src/api/test/ --junitxml=report.xml
+        - coverage xml
+    variables:
+        SCRAPE: 'OFF'
+    coverage: /^TOTAL.+?(\d+\%)$/
+    artifacts:
+        when: always
+        reports:
+            junit: report.xml
+            cobertura: coverage.xml
+    only:
+        refs:
+            - branches
+
+UI Tests:
+    stage: test
+    image: electronuserland/builder:wine
+    cache:
+        key: $CI_JOB_STAGE-$CI_COMMIT_REF_SLUG
+        paths:
+            - ./src/web/node_modules/
+    script:
+      - npm -v
+      - node -v
+      - cd ./src/web
+      - npm install
+      - npm run test -- --coverage
+    variables:
+    only:
+        refs:
+            - branches
+
+Electron Build:
+    stage: build
+    image: electronuserland/builder:wine
+    cache:
+        key: $CI_JOB_STAGE-$CI_COMMIT_REF_SLUG
+        paths:
+            - ./src/web/node_modules/
+    variables:
+        CI: 'false'
+    script:
+        - npm -v
+        - node -v
+        - cd ./src/web
+        - npm install
+        - ./node_modules/.bin/react-scripts build && ./node_modules/.bin/electron-builder -w
+    artifacts:
+        when: on_success
+        paths:
+            - ./src/web/dist/*.exe
+        expire_in: 4 days
+    only:
+        refs:
+            - develop
+            - master
+            - /^sprint\/.*$/
+
+build-prod:
+    stage: build-prod-server
+    tags:
+        - prod
+    variables:
+        CI_REGISTRY_USER: "steepvisions"
+        DOCKERHUB_CONTAINER_REGISTRY: "registry.hub.docker.com"
+    script:
+        - export PATH=$PATH:/usr/bin
+        - docker login $DOCKERHUB_CONTAINER_REGISTRY --username "$CI_REGISTRY_USER" --password "$CI_REGISTRY_PASSWORD"
+        - docker-compose -f docker-compose-swarm.prod.yml build
+        - docker-compose -f docker-compose-swarm.prod.yml push
+    only:
+        refs:
+            - master
+
+deploy-prod:
+    stage: deploy-prod-server
+    tags:
+        - prod
+    variables:
+        CI_REGISTRY_USER: "steepvisions"
+        DOCKERHUB_CONTAINER_REGISTRY: "registry.hub.docker.com"
+    script:
+        - export PATH=$PATH:/usr/bin
+        - docker login $DOCKERHUB_CONTAINER_REGISTRY --username "$CI_REGISTRY_USER" --password "$CI_REGISTRY_PASSWORD"
+        - docker stack deploy --with-registry-auth --compose-file docker-compose-swarm.prod.yml descriptr_stack
+    only:
+        refs:
+            - master

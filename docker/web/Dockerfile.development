@@ -1,0 +1,37 @@
+FROM ubuntu:20.04
+USER root
+
+RUN mkdir -p /var/www/cis4250-03.socs.uoguelph.ca
+WORKDIR /var/www/cis4250-03.socs.uoguelph.ca
+
+RUN apt-get update
+RUN apt-get -y install curl gnupg wget software-properties-common
+
+RUN dpkg --add-architecture i386
+
+#Download and add repository key for wine
+RUN wget -nc https://dl.winehq.org/wine-builds/winehq.key
+RUN apt-key add winehq.key
+
+#Add the wine repository
+RUN add-apt-repository 'deb https://dl.winehq.org/wine-builds/ubuntu/ focal main'
+
+RUN apt-get update
+
+#Install nodejs
+RUN curl -sL https://deb.nodesource.com/setup_14.x  | bash -
+RUN apt-get -y install nodejs
+
+#Install wine
+RUN apt -y install --install-recommends winehq-stable
+
+COPY src/web/package.json /var/www/cis4250-03.socs.uoguelph.ca/package.json
+RUN npm install
+COPY src/web/ /var/www/cis4250-03.socs.uoguelph.ca
+
+RUN npm run build-react
+
+RUN npm run electron-builder-linux
+RUN npm run electron-builder-windows
+
+ENTRYPOINT ["npm", "start"]

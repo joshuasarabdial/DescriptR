@@ -1,0 +1,16 @@
+Subject
+Department
+qwerty
+ASDF*1234A complex Example P1 (V-V)[0.75]
+Short descript with one line to test for next line peek test
+Offering(s): Offered through Distance Education format only. Offered in even-numbered
+years. Last offering - Summer 2021. First offering Winter 2020.
+Prerequisite(s): ACCT*4220
+Co-requisite(s): MUSC*2180
+Equate(s): CLAS*2150
+Restriction(s): AAAA*1111 , This is a Priority Access Course.
+Restriction(s): Enrolment may be restricted to particular programs or
+specializations. See department for more information.
+Department(s): Department of Management, Department of Science
+Revision: 2020-2021 Undergraduate Calendar
+XII. Course Descriptions, Accounting 537

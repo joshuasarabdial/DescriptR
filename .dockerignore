@@ -1,0 +1,6 @@
+src/web/node_modules
+src/web/build
+src/web/dist
+#Make sure electron-dist folder is here just in case someone creates one locally.
+src/api/electron-dist
+.git

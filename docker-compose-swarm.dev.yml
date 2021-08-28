@@ -1,0 +1,59 @@
+version: '3.2'
+services:
+
+    #Flask web server - API https://dev.cis4250-03.socs.uoguelph.ca/api
+    descriptr_api:
+        container_name: descriptr_api
+        #restart: always
+        build:
+            context: .
+            dockerfile: ./docker/api/Dockerfile.development
+        image: 127.0.0.1:6000/cis4250_team3/uog-course-descriptions/descriptr_api:latest
+        volumes:
+            - ./src/api:/var/www/cis4250-03.socs.uoguelph.ca
+            - electron-dist:/var/www/cis4250-03.socs.uoguelph.ca/electron-dist
+        environment:
+            - FLASK_APP=apipkg
+        networks:
+            - descriptr-network
+
+    #Node web server - Website https://dev.cis4250-03.socs.uoguelph.ca
+    descriptr_web:
+        build:
+            context: .
+            dockerfile: ./docker/web/Dockerfile.development
+        image: 127.0.0.1:6000/cis4250_team3/uog-course-descriptions/descriptr_web:latest
+        volumes:
+            - ./src/web/:/var/www/cis4250-03.socs.uoguelph.ca
+            - electron-dist:/var/www/cis4250-03.socs.uoguelph.ca/dist
+            - node_modules:/var/www/cis4250-03.socs.uoguelph.ca/node_modules
+        networks:
+            - descriptr-network
+
+    #Nginx load balancer service
+    descriptr_nginx_load_balancer:
+        container_name: descriptr_nginx_load_balancer
+        restart: always
+        build:
+            context: .
+            dockerfile: ./docker/nginx_load_balancer/Dockerfile.development
+        image: 127.0.0.1:6000/cis4250_team3/uog-course-descriptions/descriptr_nginx_load_balancer:latest
+        volumes:
+            - ssl-certs:/etc/nginx/ssl/cis4250-03.socs.uoguelph.ca
+        ports:
+            - 443:443
+            - 80:80
+        depends_on:
+            - descriptr_api
+            - descriptr_web
+        networks:
+            - descriptr-network
+
+volumes:
+    ssl-certs:
+    node_modules:
+    electron-dist:
+
+networks:
+    descriptr-network:
+        driver: overlay

@@ -1,0 +1,77 @@
+version: '3.2'
+services:
+
+    #Flask web server - API https://cis4250-03.socs.uoguelph.ca/api
+    descriptr_api:
+        container_name: descriptr_api
+        #restart: always
+        build:
+            context: .
+            dockerfile: ./docker/api/Dockerfile.production
+        image: ${DOCKERHUB_CONTAINER_REGISTRY}/steepvisions/uog-course-descriptions-descriptr_api:latest
+        environment:
+            - FLASK_APP=apipkg
+        networks:
+            - descriptr-network
+
+    #Node web server - Website https://cis4250-03.socs.uoguelph.ca
+    descriptr_web:
+        build:
+            context: .
+            dockerfile: ./docker/web/Dockerfile.production
+        image: ${DOCKERHUB_CONTAINER_REGISTRY}/steepvisions/uog-course-descriptions-descriptr_web:latest
+        networks:
+            - descriptr-network
+
+    #Nginx load balancer service
+    descriptr_nginx_load_balancer:
+        container_name: descriptr_nginx_load_balancer
+        restart: always
+        build:
+            context: .
+            dockerfile: ./docker/nginx_load_balancer/Dockerfile.production
+        image: ${DOCKERHUB_CONTAINER_REGISTRY}/steepvisions/uog-course-descriptions-descriptr_nginx_load_balancer:latest
+        volumes:
+            - ssl-certs:/etc/nginx/ssl/cis4250-03.socs.uoguelph.ca
+            - acme-challenge:/var/www/.well-known/acme-challenge
+        ports:
+            - 443:443
+            - 80:80
+        labels:
+            - sh.acme.autoload.domain=cis4250-03.socs.uoguelph.ca
+        depends_on:
+            - descriptr_api
+            - descriptr_web
+        networks:
+            - descriptr-network
+
+    #Acme.sh service - LetsEncrypt
+    descriptr_acmesh:
+        build:
+            context: ./docker/acmesh
+            dockerfile: Dockerfile.production
+        image: ${DOCKERHUB_CONTAINER_REGISTRY}/steepvisions/uog-course-descriptions-descriptr_acmesh:latest
+        container_name: acmesh
+        command: sh ./acme.sh-docker.sh
+        volumes:
+            - acme-out:/acme.sh
+            - acme-challenge:/home/ubuntu/acme-challenge
+            - /var/run/docker.sock:/var/run/docker.sock
+        depends_on:
+            - descriptr_nginx_load_balancer
+        environment:
+            - DEPLOY_DOCKER_CONTAINER_LABEL=sh.acme.autoload.domain=cis4250-03.socs.uoguelph.ca
+            - DEPLOY_DOCKER_CONTAINER_KEY_FILE="/etc/nginx/ssl/cis4250-03.socs.uoguelph.ca/key.pem"
+            - DEPLOY_DOCKER_CONTAINER_CERT_FILE="/etc/nginx/ssl/cis4250-03.socs.uoguelph.ca/cert.pem"
+            - DEPLOY_DOCKER_CONTAINER_CA_FILE="/etc/nginx/ssl/cis4250-03.socs.uoguelph.ca/ca.pem"
+            - DEPLOY_DOCKER_CONTAINER_FULLCHAIN_FILE="/etc/nginx/ssl/cis4250-03.socs.uoguelph.ca/full.pem"
+            - DEPLOY_DOCKER_CONTAINER_RELOAD_CMD="service nginx force-reload"
+
+volumes:
+    ssl-certs:
+    acme-out:
+    acme-challenge:
+
+networks:
+    descriptr-network:
+        driver: overlay

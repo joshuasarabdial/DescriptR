@@ -1,0 +1,6 @@
+FROM neilpang/acme.sh
+
+COPY acme.sh-docker.sh acme.sh-docker.sh
+
+#Create a directory where we will store the http validation challenge
+RUN mkdir ~/acme-challenge
